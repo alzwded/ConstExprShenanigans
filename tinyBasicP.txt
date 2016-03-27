@@ -1,0 +1,17 @@
+Parser:
+    bool fail
+    Buffer buf
+    Parser operator ||(Parser&)
+    Parser operator &&(Parser&)
+
+Parser line():
+    return number() && statement() && cr()
+        || statement().cr()
+    ;
+
+Parser cr():
+    if(!good()):
+        return Parser(false, buf);
+    if(buf.peek() == '\n'):
+        return Parser(true, buf.tail());
+    return Praser(false, buf);
