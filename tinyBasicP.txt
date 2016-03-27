@@ -4,14 +4,146 @@ Parser:
     Parser operator ||(Parser&)
     Parser operator &&(Parser&)
 
-Parser line():
-    return number() && statement() && cr()
-        || statement().cr()
-    ;
+bool failed()
+    return fail || buf.empty()
 
-Parser cr():
-    if(!good()):
-        return Parser(false, buf);
-    if(buf.peek() == '\n'):
-        return Parser(true, buf.tail());
-    return Praser(false, buf);
+Parser file()
+    if(buf.empty()) return true
+    if(failed()) return *this
+    return line().file()
+
+Parser line()
+    if(failed()) return *this
+    return number().statement().cr()
+        || statement().cr()
+
+Parser number()
+    if(failed()) return *this
+    switch(buf.head())
+        [ ]: return Parser(buf.tail()).number()
+        [0-9]: buf = buf.tail()
+        default: return {FAIL}
+    loop
+        switch(buf.head())
+            [0-9]: buf = buf.tail()
+            default: exit loop
+    return Parser(buf)
+
+Parser cr()
+    if(failed()) return *this
+    if(buf.head() == ' ') return Parser(buf.tail()).cr()
+    if(buf.head() == '\n') return Parser(buf.tail())
+    return {FAIL}
+
+Parser statement()
+    if(failed()) return *this
+    return literal("PRINT").expr_list()
+        || literal("DATA").expr_list()
+        || literal("IF").expression().relop().expression().literal("THEN").statement()
+        || literal("GOTO").expression()
+        || literal("INPUT").var_list()
+        || literal("LET").var().literal("=").expression()
+        || literal("GOSUB").expression()
+        || literal("RETURN")
+        || literal("CLEAR")
+        || literal("LIST")
+        || literal("RUN")
+        || literal("END")
+        ;
+
+Parser literal(char const* s)
+    if(failed()) return *this
+    if(buf.head() == ' ') return literal(s)
+    if(*s == '\0') return *this
+    if(*s != buf.head()) return {FAIL}
+    return Parser(buf.tail()).literal(s+1)
+
+Parser relop()
+    if(failed()) return *this
+    if(buf.head() == ' ') return Parser(buf.tail()).relop()
+    switch(buf.head()):
+        [<>]:
+            buf = buf.tail()
+            switch(buf.head()):
+                [<>=]: return Parser(buf.tail())
+                else: return Parser(buf)
+        [=]: return Parser(buf.tail())
+    return {FAIL}
+
+Parser var()
+    if(failed()) return *this
+    if(buf.head() == ' ') return Parser(buf.tail()).var()
+    switch(buf.head())
+        [A-Z]: return Parser(buf.tail())
+    return {FAIL}
+
+Parser var_list()
+    if(failed()) return *this
+    auto next = var()
+    if(!next) return {FAIL}
+    while(next.literal(","))
+        next = next.literal(",").var()
+        if(!next) return {FAIL}
+    return next
+
+Parser expression()
+    if(failed()) return *this
+    if(buf.head() == ' ') return Parser(buf.tail()).expression()
+    auto next = literal("+").term()
+             || literal("-").term()
+             || term()
+    if(!next) return {FAIL}
+    while(next.literal("+") || next.literal("-"))
+        next = (next.literal("+") || next.literal("-")).term()
+        if(!next) return {FAIL}
+    return next
+
+Parser term()
+    if(failed()) return *this
+    if(buf.head() == ' ') return Parser(buf.tail()).term()
+    auto next = factor()
+    if(!next) return {FAIL}
+    while(next.literal("*") || next.literal("/"))
+        next = (next.literal("*") || next.literal("/")).factor()
+        if(!next) return {FAIL}
+    return next
+
+Parser factor()
+    if(failed()) return *this
+    if(buf.head() == ' ') return Parser(buf.tail()).factor()
+    return var()
+        || number()
+        || literal("(").expression().literal(")")
+    if(!next) return {FAIL}
+    while(next.literal("*") || next.literal("/"))
+        next = (next.literal("*") || next.literal("/")).factor()
+        if(!next) return {FAIL}
+    return next
+
+Parser expr_list()
+    if(failed()) return *this
+    if(buf.head() == ' ') return Parser(buf.tail()).expr_list()
+    auto next = string()
+             || expression()
+    if(!next) return {FAIL}
+    while(next.literal(","))
+        next = next.literal(",")
+        next = next.string()
+            || next.expression()
+        if(!next) return {FAIL}
+    return next
+
+
+
+
+
+#if 0
+Parser creturn()
+    if(buf.head() == ' ') return creturn()
+    static chars[] = "RETURN"
+    for(auto i = &chars[0]; chars[i]; ++i) {
+        if(buf.head() != chars[i]) return {FAIL}
+        buf = buf.tail()
+    }
+    return Parser(buf)
+#endif
