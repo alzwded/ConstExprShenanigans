@@ -267,11 +267,13 @@ private:
 
     constexpr TinyBasicParser expression_helper() const
     {
+        if(failed()) return *this;
         auto next = literal("+") || literal("-");
         if(next.failed()) return *this;
         auto nextnext = next.term();
         if(nextnext.failed()) return nextnext;
-        return nextnext.expression_helper();
+        //return nextnext.expression_helper();
+        return nextnext;
     }
 
     constexpr TinyBasicParser expression() const
@@ -299,7 +301,8 @@ private:
         if(next.failed()) return *this;
         auto nextnext = next.factor();
         if(nextnext.failed()) return nextnext;
-        return nextnext.term_helper();
+        //return nextnext.term_helper();
+        return nextnext;
     }
 
     constexpr TinyBasicParser term() const
@@ -331,7 +334,7 @@ private:
 
         return var()
             || number()
-            || literal("(").expression().literal(")")
+            //|| literal("(").expression().literal(")")
             ;
     }
 
@@ -343,7 +346,8 @@ private:
             || next.expression()
             ;
         if(nextnext.failed()) return nextnext;
-        return nextnext.expr_list_helper();
+        //return nextnext.expr_list_helper();
+        return nextnext;
     }
 
     constexpr TinyBasicParser expr_list() const

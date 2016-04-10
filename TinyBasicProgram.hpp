@@ -40,11 +40,11 @@ struct TinyBasicProgram
     {}
 };
 
-#define TinyBasicProgram(S)\
+#define TinyBasic(S)\
     ((\
       Jak::SyntaxCheckHelper<\
-            Jak::TinyBasicParser(Jak::Buf(S)).file().code(),\
-            Jak::TinyBasicParser(Jak::Buf(S)).file().lineNo()>()\
+            (Jak::TinyBasicParser(Jak::Buf(S)).file()).code(),\
+            (Jak::TinyBasicParser(Jak::Buf(S)).file()).lineNo()>()\
       ),\
      TinyBasicProgram(S))
 
