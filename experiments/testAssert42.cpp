@@ -44,13 +44,13 @@ struct Buf {
 };
 
 template<typename error, int line>
-void check2()
+constexpr void check2()
 {
     static_assert(error(), "Compilation Error");
 }
 
 template<Code C, int line>
-void check()
+constexpr void check()
 {
     check2<typename decode<C>::valid, line>();
 }
