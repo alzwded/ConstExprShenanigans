@@ -12,12 +12,21 @@ struct E_MALFORMED { constexpr E_MALFORMED(){} constexpr operator bool() const {
 template<Code C>
 struct decode;
 
+#if 0
 template<>
 struct decode<Code::OK> { static constexpr E_OK validity(){return{};} };
 template<>
 struct decode<Code::MISSING> { static constexpr E_MISSING validity(){return{};} };
 template<>
 struct decode<Code::MALFORMED> { static constexpr E_MALFORMED validity(){return{};} };
+#endif
+
+template<>
+struct decode<Code::OK       > { typedef E_OK valid; };
+template<>
+struct decode<Code::MISSING  > { typedef E_MISSING valid; };
+template<>
+struct decode<Code::MALFORMED> { typedef E_MALFORMED valid; };
 
 
 
@@ -40,11 +49,10 @@ void check2()
     static_assert(error(), "Compilation Error");
 }
 
-template<typename error, int line>
+template<Code C, int line>
 void check()
 {
-    auto constexpr error2 = error::validity();
-    check2<decltype(error2), line>();
+    check2<typename decode<C>::valid, line>();
 }
 
 int main()
@@ -54,8 +62,8 @@ int main()
     constexpr Buf a3(Code::MALFORMED, 12);
     constexpr Buf a4(Code::MISSING, 23);
 
-    check<decode<a1.GetCode()>, a1.GetLine()>();
-    check<decode<a2.GetCode()>, a2.GetLine()>();
-    check<decode<a3.GetCode()>, a3.GetLine()>();
-    check<decode<a4.GetCode()>, a4.GetLine()>();
+    check<a1.GetCode(), a1.GetLine()>();
+    check<a2.GetCode(), a2.GetLine()>();
+    check<a3.GetCode(), a3.GetLine()>();
+    check<a4.GetCode(), a4.GetLine()>();
 }
