@@ -8,7 +8,7 @@
 
 inline void Execute(TinyBasicProgram prg)
 {
-    printf("%40svalid program:\n%s\n", Q(TEST_NAME), prg.source);
+    printf("%s contains a valid program:\n%s\n", Q(TEST_NAME), prg.source);
 }
 
 #endif

@@ -4,17 +4,20 @@
 int main()
 {
 #if 0
-#define S "10 PRINT 'Hello, World!'\
+#define S "10 PRINT 'Hello, World!'\n\
             20 GOTO 10"
-      Jak::SyntaxCheckHelper<\
-            (Jak::TinyBasicParser(Jak::Buf(S)).file()).code(),\
-            (Jak::TinyBasicParser(Jak::Buf(S)).file()).lineNo()>()\
-            ;
+
+
+      Jak::SyntaxCheckHelper<
+            (Jak::TinyBasicParser(Jak::Buf(S)).file()).code(),
+            (Jak::TinyBasicParser(Jak::Buf(S)).file()).lineNo()
+                > () ;
 
 
 
 #else
-    Execute(TinyBasicProgram("10 PRINT 'Hello, World!'\
-            20 GOTO 10"));
+    Execute(TinyBasic("\n\
+            10 PRINT PRINT 'Hello, World!'\n\
+            20 GOTO 10\n"));
 #endif
 }

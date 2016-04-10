@@ -34,41 +34,41 @@ struct TinyBasicParser
     int const line_;
     Buf buf_;
 
-    explicit constexpr TinyBasicParser(Buf const buf)
+    explicit  TinyBasicParser(Buf const buf)
         : code_(Code::InternalError)
           , line_(1)
           , buf_(buf)
     {}
 
-    constexpr TinyBasicParser(Code const code, int const line, Buf const buf)
+     TinyBasicParser(Code const code, int const line, Buf const buf)
         : code_(code)
           , line_(line)
           , buf_(buf)
     {}
 
-    constexpr TinyBasicParser(TinyBasicParser&& p)
+     TinyBasicParser(TinyBasicParser&& p)
         : code_(p.code_)
           , line_(p.line_)
           , buf_(p.buf_)
     {}
 
-    constexpr TinyBasicParser(TinyBasicParser const& p)
+     TinyBasicParser(TinyBasicParser const& p)
         : code_(p.code_)
           , line_(p.line_)
           , buf_(p.buf_)
     {}
 
-    constexpr Code code() const { return code_; }
-    constexpr int lineNo() const { return line_; }
-    constexpr Buf buf() const { return buf_; }
+     Code code() const { return code_; }
+     int lineNo() const { return line_; }
+     Buf buf() const { return buf_; }
 
-    constexpr TinyBasicParser operator||(TinyBasicParser const p) const
+     TinyBasicParser operator||(TinyBasicParser const p) const
     {
         if(failed()) return p;
         return *this;
     }
 
-    constexpr TinyBasicParser file() const
+     TinyBasicParser file() const
     {
         if(failed()) return *this;
         if(buf_.empty()) return {Code::Okay, line_, buf_};
@@ -77,7 +77,7 @@ struct TinyBasicParser
 
 private:
 
-    constexpr bool failed() const
+     bool failed() const
     {
         switch(code_)
         {
@@ -89,12 +89,12 @@ private:
         }
     }
 
-    constexpr bool good() const
+     bool good() const
     {
         return !failed();
     }
 
-    constexpr TinyBasicParser line() const
+     TinyBasicParser line() const
     {
         if(failed()) return *this;
 
@@ -103,7 +103,7 @@ private:
             ;
     }
 
-    constexpr TinyBasicParser number_helper() const
+     TinyBasicParser number_helper() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         switch(buf_.head()) {
@@ -123,7 +123,7 @@ private:
         }
     }
 
-    constexpr TinyBasicParser number() const
+     TinyBasicParser number() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -152,7 +152,7 @@ private:
         return TinyBasicParser{code_, line_, buf_.tail()}.number_helper();
     }
 
-    constexpr TinyBasicParser cr() const
+     TinyBasicParser cr() const
     {
         if(failed()) return *this;
         if(buf_.empty()) return *this;
@@ -169,7 +169,7 @@ private:
         }
     }
 
-    constexpr TinyBasicParser statement() const
+     TinyBasicParser statement() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -189,7 +189,7 @@ private:
             ;
     }
 
-    constexpr TinyBasicParser literal(char const* s) const
+     TinyBasicParser literal(char const* s) const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -204,7 +204,7 @@ private:
         return TinyBasicParser{code_, line_, buf_.tail()}.literal(s + 1);
     }
 
-    constexpr TinyBasicParser relop() const
+     TinyBasicParser relop() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -231,7 +231,7 @@ private:
         }
     }
 
-    constexpr TinyBasicParser var() const
+     TinyBasicParser var() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -252,7 +252,7 @@ private:
         }
     }
 
-    constexpr TinyBasicParser var_list_helper() const
+     TinyBasicParser var_list_helper() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(literal(",").good()) {
@@ -263,7 +263,7 @@ private:
         return *this;
     }
 
-    constexpr TinyBasicParser var_list() const
+     TinyBasicParser var_list() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -273,7 +273,7 @@ private:
         return next.var_list_helper();
     }
 
-    constexpr TinyBasicParser expression_helper() const
+     TinyBasicParser expression_helper() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -285,7 +285,7 @@ private:
         //return nextnext;
     }
 
-    constexpr TinyBasicParser expression() const
+     TinyBasicParser expression() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -305,7 +305,7 @@ private:
         return next.expression_helper();
     }
 
-    constexpr TinyBasicParser term_helper() const
+     TinyBasicParser term_helper() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         auto next = literal("*") || literal("/");
@@ -316,7 +316,7 @@ private:
         //return nextnext;
     }
 
-    constexpr TinyBasicParser term() const
+     TinyBasicParser term() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -333,7 +333,7 @@ private:
         return next.term_helper();
     }
 
-    constexpr TinyBasicParser factor() const
+     TinyBasicParser factor() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -351,7 +351,7 @@ private:
             ;
     }
 
-    constexpr TinyBasicParser expr_list_helper() const
+     TinyBasicParser expr_list_helper() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         auto next = literal(",");
@@ -364,7 +364,7 @@ private:
         //return nextnext;
     }
 
-    constexpr TinyBasicParser expr_list() const
+     TinyBasicParser expr_list() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -383,7 +383,7 @@ private:
         return next.expr_list_helper();
     }
 
-    constexpr TinyBasicParser string_helper() const
+     TinyBasicParser string_helper() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
@@ -400,7 +400,7 @@ private:
         }
     }
 
-    constexpr TinyBasicParser string() const
+     TinyBasicParser string() const
     {
         if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
         if(failed()) return *this;
