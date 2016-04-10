@@ -3,9 +3,12 @@
 
 #include <cstdio>
 
+#define QUOTE(X) #X
+#define Q(X) QUOTE(X)
+
 inline void Execute(TinyBasicProgram prg)
 {
-    printf("%40svalid program:\n%s\n", TEST_NAME, prg.code);
+    printf("%40svalid program:\n%s\n", Q(TEST_NAME), prg.source);
 }
 
 #endif

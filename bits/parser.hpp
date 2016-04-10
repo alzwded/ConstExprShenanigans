@@ -103,6 +103,25 @@ private:
             ;
     }
 
+    constexpr TinyBasicParser number_helper() const
+    {
+        switch(buf_.head()) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+                return TinyBasicParser{code_, line_, buf_.tail()}.number_helper();
+            default:
+                return *this;
+        }
+    }
+
     constexpr TinyBasicParser number() const
     {
         if(failed()) return *this;
@@ -128,35 +147,19 @@ private:
             return {Code::ExpectingANumber, line_, buf_};
         }
 
-        while(1) {
-            switch(b.head()) {
-            case '0':
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-                b = b.tail();
-            default:
-                return {code_, line_, b};
-            }
-        }
+        return TinyBasicParser{code_, line_, buf_.tail()}.number_helper();
     }
 
     constexpr TinyBasicParser cr() const
     {
         if(failed()) return *this;
-        if(buf_.empty) return *this;
+        if(buf_.empty()) return *this;
 
         switch(buf_.head())
         {
         case ' ':
         case '\t':
-            return {code_, line_, buf_.tail()}.cr();
+            return TinyBasicParser{code_, line_, buf_.tail()}.cr();
         case '\n':
             return {code_, line_ + 1, buf_.tail()};
         default:
@@ -190,11 +193,11 @@ private:
         switch(buf_.head()) {
         case ' ':
         case '\t':
-            return {code_, line_, buf_.tail()}.literal(s);
+            return TinyBasicParser{code_, line_, buf_.tail()}.literal(s);
         }
         if(*s == '\0') return *this;
         if(*s != buf_.head()) return {Code::UnknownKeyword, line_, buf_};
-        return {code_, line_, buf_.tail()}.literal(s + 1);
+        return TinyBasicParser{code_, line_, buf_.tail()}.literal(s + 1);
     }
 
     constexpr TinyBasicParser relop() const
@@ -204,7 +207,7 @@ private:
         switch(buf_.head()) {
         case ' ':
         case '\t':
-            return {code_, line_, buf_.tail()}.relop();
+            return TinyBasicParser{code_, line_, buf_.tail()}.relop();
         case '<':
         case '>':
             switch(buf_.tail().head()) {
@@ -231,7 +234,7 @@ private:
         {
         case ' ':
         case '\t':
-            return {code_, line_, buf_.tail()}.var();
+            return TinyBasicParser{code_, line_, buf_.tail()}.var();
         case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
         case 'G': case 'H': case 'I': case 'J': case 'K': case 'L':
         case 'M': case 'N': case 'O': case 'P': case 'Q': case 'R':
@@ -243,17 +246,32 @@ private:
         }
     }
 
+    constexpr TinyBasicParser var_list_helper() const
+    {
+        if(literal(",").good()) {
+            auto next = literal(",").var();
+            if(next.failed()) return next;
+            return next.var_list_helper();
+        }
+        return *this;
+    }
+
     constexpr TinyBasicParser var_list() const
     {
         if(failed()) return *this;
 
         TinyBasicParser next = var();
         if(next.failed()) return next;
-        while(next.literal(",").good()) {
-            next = next.literal(",").var();
-            if(next.failed()) return next;
-        }
-        return next;
+        return next.var_list_helper();
+    }
+
+    constexpr TinyBasicParser expression_helper() const
+    {
+        auto next = literal("+") || literal("-");
+        if(next.failed()) return *this;
+        auto nextnext = next.term();
+        if(nextnext.failed()) return nextnext;
+        return nextnext.expression_helper();
     }
 
     constexpr TinyBasicParser expression() const
@@ -264,7 +282,7 @@ private:
         {
         case ' ':
         case '\t':
-            return {code_, line_, buf_.tail()}.expression();
+            return TinyBasicParser{code_, line_, buf_.tail()}.expression();
         }
 
         TinyBasicParser next = literal("+").term()
@@ -272,11 +290,16 @@ private:
             || term()
             ;
         if(next.failed()) return next;
-        while((next.literal("+") || next.literal("-")).good()) {
-            next = (next.literal("+") || next.literal("-")).term();
-            if(next.failed()) return next;
-        }
-        return next;
+        return next.expression_helper();
+    }
+
+    constexpr TinyBasicParser term_helper() const
+    {
+        auto next = literal("*") || literal("/");
+        if(next.failed()) return *this;
+        auto nextnext = next.factor();
+        if(nextnext.failed()) return nextnext;
+        return nextnext.term_helper();
     }
 
     constexpr TinyBasicParser term() const
@@ -287,16 +310,12 @@ private:
         {
         case ' ':
         case '\t':
-            return {code_, line_, buf_.tail()}.term();
+            return TinyBasicParser{code_, line_, buf_.tail()}.term();
         }
 
         TinyBasicParser next = factor();
         if(next.failed()) return next;
-        while((next.literal("*") || next.literal("/")).good()) {
-            next = (next.literal("*") || next.literal("/")).factor();
-            if(next.failed()) return next;
-        }
-        return next;
+        return next.term_helper();
     }
 
     constexpr TinyBasicParser factor() const
@@ -307,13 +326,24 @@ private:
         {
         case ' ':
         case '\t':
-            return {code_, line_, buf_.tail()}.factor();
+            return TinyBasicParser{code_, line_, buf_.tail()}.factor();
         }
 
         return var()
             || number()
             || literal("(").expression().literal(")")
             ;
+    }
+
+    constexpr TinyBasicParser expr_list_helper() const
+    {
+        auto next = literal(",");
+        if(next.failed()) return *this;
+        auto nextnext = next.string()
+            || next.expression()
+            ;
+        if(nextnext.failed()) return nextnext;
+        return nextnext.expr_list_helper();
     }
 
     constexpr TinyBasicParser expr_list() const
@@ -324,21 +354,30 @@ private:
         {
         case ' ':
         case '\t':
-            return {code_, line_, buf_.tail()}.expr_list();
+            return TinyBasicParser{code_, line_, buf_.tail()}.expr_list();
         }
 
         TinyBasicParser next = string()
             || expression()
             ;
         if(next.failed()) return next;
-        while(next.literal(",").good()) {
-            next = next.literal(",");
-            next = next.string()
-                || next.expression()
-                ;
-            if(next.failed()) return next,
+        return next.expr_list_helper();
+    }
+
+    constexpr TinyBasicParser string_helper() const
+    {
+        if(failed()) return *this;
+
+        if(buf_.empty()) return {Code::RunawayString, line_, buf_};
+        switch(buf_.head()) {
+        case '"':
+        case '\'':
+            return {code_, line_, buf_.tail()};
+        case '\n':
+            return TinyBasicParser{code_, line_ + 1, buf_.tail()}.string_helper();
+        default:
+            return TinyBasicParser{code_, line_, buf_.tail()}.string_helper();
         }
-        return next();
     }
 
     constexpr TinyBasicParser string() const
@@ -349,7 +388,7 @@ private:
         {
         case ' ':
         case '\t':
-            return {code_, line_, buf_.tail()}.string();
+            return TinyBasicParser{code_, line_, buf_.tail()}.string();
         case '"':
         case '\'':
             break;
@@ -357,22 +396,7 @@ private:
             return {Code::ExpectingQuotes, line_, buf_};
         }
 
-        Buf b = buf_.tail();
-        int line = line_;
-        while(1) {
-            if(b.empty()) return {Code::RunawayString, line, buf_};
-            switch(b.head()) {
-            case '"':
-            case '\'':
-                return {code_, line_, b.tail()};
-            case '\n':
-                line++;
-                /*FALLTHROUGH*/
-            default:
-                b = b.tail();
-                break;
-            }
-        }
+        return string_helper();
     }
 };
 

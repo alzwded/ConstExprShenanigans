@@ -45,6 +45,7 @@ enum class Code {
     ExpectingRelationalOperator,
     ExpectingAVariable,
     ExpectingQuotes,
+    RunawayString,
     TODO_remove_me
 };
 
@@ -59,6 +60,7 @@ JAK_ERR(UnknownKeyword, false);
 JAK_ERR(ExpectingRelationalOperator, false);
 JAK_ERR(ExpectingAVariable, false);
 JAK_ERR(ExpectingQuotes, false);
+JAK_ERR(RunawayString, false);
 
 #undef JAK_ERR
 
