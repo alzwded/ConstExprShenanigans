@@ -135,7 +135,7 @@ private:
     CONSTEXPR TinyBasicParser number_helper() const
     {
         if(buf_.empty()) {
-            DTRACE("number_helper(): end of file, leaing it to cr()\n");
+            DTRACE("number_helper(): end of file, leaving it to cr()\n");
             return *this;
         }
         switch(buf_.head()) {
@@ -354,8 +354,8 @@ private:
     CONSTEXPR TinyBasicParser var_list_helper() const
     {
         if(buf_.empty()) {
-            DTRACE("var_list_helper(): unexpected end of file, immediately returning\n");
-            return {Code::UnexpectedEndOfFile, line_, buf_};
+            DTRACE("var_list_helper(): end of file, leaving it to cr()\n");
+            return *this;
         }
         if(literal(",").good()) {
             DTRACE("var_list_helper(): got a comma, continuing\n");
@@ -389,12 +389,12 @@ private:
 
     CONSTEXPR TinyBasicParser expression_helper() const
     {
-        if(buf_.empty()) {
-            DTRACE("expression_helper(): end of file, leaving it to cr()\n");
-            return *this;
-        }
         if(failed()) {
             DTRACE("expression_helper(): fail state, immediately returning\n");
+            return *this;
+        }
+        if(buf_.empty()) {
+            DTRACE("expression_helper(): end of file, leaving it to cr()\n");
             return *this;
         }
         DTRACE("expression_helper(): trying + or -\n");
