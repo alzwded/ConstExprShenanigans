@@ -39,14 +39,14 @@ namespace Jak {
 enum class Code {
     Okay = 0,
     InternalError = 1,
-    ExpectingANumber,
-    ExpectingEndOfLine,
-    UnknownKeyword,
-    ExpectingRelationalOperator,
-    ExpectingAVariable,
-    ExpectingQuotes,
-    RunawayString,
-    UnexpectedEndOfFile,
+    ExpectingANumber = 10,
+    ExpectingEndOfLine = 11,
+    UnknownKeyword = 12,
+    ExpectingRelationalOperator = 13,
+    ExpectingAVariable = 14,
+    ExpectingQuotes = 15,
+    RunawayString = 16,
+    UnexpectedEndOfFile = 17,
     TODO_remove_me
 };
 

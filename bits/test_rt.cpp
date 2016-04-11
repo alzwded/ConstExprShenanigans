@@ -23,6 +23,10 @@ int main()
 10 PRINT 'Hello, World!'\n\
 20 GOTO 10\n"));
     int refCode = 0;
+#elif TEST == 4
+    TinyBasicParser p(Buf("\
+10 PIRNT 'Hello, World!'"));
+    int refCode = 12;
 #endif
     auto code = static_cast<int>(p.file().code());
     printf("%d\n", code);
