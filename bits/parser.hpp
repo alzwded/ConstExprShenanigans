@@ -34,10 +34,6 @@
 # define TRACE(F, ...) 
 #endif
 
-#ifndef DUMP
-# define DUMP(X)
-#endif
-
 #ifndef DTRACE
 # define DTRACE(F, ...)
 #endif
@@ -81,10 +77,10 @@ struct TinyBasicParser
     CONSTEXPR TinyBasicParser operator||(TinyBasicParser const p) const
     {
         if(failed()) {
-            TRACE("||: This "); DUMP(*this); TRACE(" failed, returning "); DUMP(p); TRACE("\n");
+            TRACE("||: This " PFMT " failed, returning " PFMT "\n", P(*this), P(p));
             return p;
         }
-        TRACE("||: This "); DUMP(*this); TRACE(" succeeded, ignoring "); DUMP(p); TRACE("\n");
+        TRACE("||: This " PFMT " succeeded, ignoring " PFMT "\n", P(*this), P(p));
         return *this;
     }
 
@@ -132,7 +128,7 @@ private:
         auto ret = number().statement().cr()
             || statement().cr()
             ;
-        DTRACE("line(): got "); DUMP(ret); TRACE("\n");
+        DTRACE("line(): got " PFMT "\n", P(ret));
         return ret;
     }
 
@@ -252,7 +248,7 @@ private:
             || literal("END")
             ;
 
-        DTRACE("statement(): got "); DUMP(ret); TRACE("\n");
+        DTRACE("statement(): got " PFMT "\n", P(ret));
 
         return ret;
     }
@@ -364,7 +360,7 @@ private:
         if(literal(",").good()) {
             DTRACE("var_list_helper(): got a comma, continuing\n");
             auto next = literal(",").var();
-            DTRACE("var_list_helper(): next was "); DUMP(next); TRACE("\n");
+            DTRACE("var_list_helper(): next was " PFMT "\n", P(next));
             if(next.failed()) return next;
             DTRACE("var_list_helper(): continuing\n");
             return next.var_list_helper();
@@ -385,7 +381,7 @@ private:
         }
 
         TinyBasicParser next = var();
-        DTRACE("var_list(): next is "); DUMP(next); TRACE("\n");
+        DTRACE("var_list(): next is " PFMT "\n", P(next));
         if(next.failed()) return next;
         DTRACE("var_list(): entering helper\n");
         return next.var_list_helper();
@@ -403,11 +399,11 @@ private:
         }
         DTRACE("expression_helper(): trying + or -\n");
         auto next = literal("+") || literal("-");
-        DTRACE("got "); DUMP(next); TRACE("\n");
+        DTRACE("got " PFMT "\n", P(next));
         if(next.failed()) return *this;
         DTRACE("expression_helper(): trying term\n");
         auto nextnext = next.term();
-        DTRACE("got "); DUMP(nextnext); TRACE("\n");
+        DTRACE("got " PFMT "\n", P(nextnext));
         if(nextnext.failed()) return nextnext;
         DTRACE("recursing\n");
         return nextnext.expression_helper();
