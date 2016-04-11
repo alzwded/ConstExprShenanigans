@@ -4,11 +4,13 @@ SETLOCAL
 IF #%1 == # GOTO :NOFILE
 SET testName=%1
 
-IF #%2 == # GOTO :EXEC
+IF #%2 == # GOTO :LOUD
 IF #%2 == #noinfo GOTO :SILENT
 
+GOTO :BADCANRY
 IF #%3 NEQ # GOTO :BADCANRY
 
+:LOUD
 SET ADDOPTS=-DPRINT_INFO
 GOTO :EXEC
 
@@ -24,9 +26,9 @@ g++ --std=gnu++14 -g -I. -I./bits -DTEST=%testName% %ADDOPTS% %cppName% && a
 GOTO :EOF
 
 :NOFILE
-ECHO Should give a test number, e.g. 1
+ECHO testrt ^<num^> [noinfo]
 EXIT /B 255
 
 :BADCANRY
-ECHO Don't know what to do with so many parameters
+ECHO testrt ^<num^> [noinfo]
 EXIT /B 255
