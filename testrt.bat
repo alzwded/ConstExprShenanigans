@@ -6,9 +6,9 @@ SET testName=%1
 
 IF #%2 NEQ # GOTO :BADCANRY
 
-SET cppName=test_rt.cpp
+SET cppName=bits/test_rt.cpp
 
-g++ --std=gnu++14 -g -DTEST=%testName% %cppName% && a
+g++ --std=gnu++14 -g -I. -I./bits -DTEST=%testName% %cppName% && a
 
 GOTO :EOF
 
