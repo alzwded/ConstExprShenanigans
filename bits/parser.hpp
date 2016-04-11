@@ -407,7 +407,6 @@ private:
         if(nextnext.failed()) return nextnext;
         DTRACE("recursing\n");
         return nextnext.expression_helper();
-        //return nextnext;
     }
 
     CONSTEXPR TinyBasicParser expression() const
@@ -456,7 +455,6 @@ private:
         if(nextnext.failed()) return nextnext;
         DTRACE("term_helper(): recursing\n");
         return nextnext.term_helper();
-        //return nextnext;
     }
 
     CONSTEXPR TinyBasicParser term() const
@@ -532,7 +530,6 @@ private:
         if(nextnext.failed()) return nextnext;
         DTRACE("expr_list_helper(): recursing\n");
         return nextnext.expr_list_helper();
-        //return nextnext;
     }
 
     CONSTEXPR TinyBasicParser expr_list() const
