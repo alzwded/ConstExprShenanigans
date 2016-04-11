@@ -27,7 +27,7 @@
 #define CONSTEXPR
 #define TRACE(F, ...) printf("(%d) " F, __LINE__, ## __VA_ARGS__)
 #define PFMT "[%d, %d, %s]"
-#define P(X) static_cast<int>((X).code()), (X).lineNo(), (X).buf_.s_
+#define P(X) static_cast<int>((X).code()), (X).lineNo(), (X).buf().text()
 #define DTRACE(F, ...) do{TRACE(PFMT ": " F, P(*this), ## __VA_ARGS__);}while(0)
 #include <cstdio>
 #include "parser.hpp"
