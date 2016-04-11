@@ -16,8 +16,8 @@ int main()
 
 
 #else
-    Execute(TinyBasic("\n\
-            10 PRINT PRINT 'Hello, World!'\n\
+    Execute(TinyBasic("\
+            10 PRINT 'Hello, World!'\n\
             20 GOTO 10\n"));
 #endif
 }

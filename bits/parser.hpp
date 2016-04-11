@@ -139,8 +139,8 @@ private:
     CONSTEXPR TinyBasicParser number_helper() const
     {
         if(buf_.empty()) {
-            DTRACE("number_helper(): unexpected end of file\n");
-            return {Code::UnexpectedEndOfFile, line_, buf_};
+            DTRACE("number_helper(): end of file, leaing it to cr()\n");
+            return *this;
         }
         switch(buf_.head()) {
             case '0':
@@ -394,8 +394,8 @@ private:
     CONSTEXPR TinyBasicParser expression_helper() const
     {
         if(buf_.empty()) {
-            DTRACE("expression_helper(): unexpected end of file, immediately returning\n");
-            return {Code::UnexpectedEndOfFile, line_, buf_};
+            DTRACE("expression_helper(): end of file, leaving it to cr()\n");
+            return *this;
         }
         if(failed()) {
             DTRACE("expression_helper(): fail state, immediately returning\n");
@@ -416,136 +416,210 @@ private:
 
     CONSTEXPR TinyBasicParser expression() const
     {
-        if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
-        if(failed()) return *this;
+        if(buf_.empty()) {
+            DTRACE("expression(): unexpected end of file, immediately returning\n");
+            return {Code::UnexpectedEndOfFile, line_, buf_};
+        }
+        if(failed()) {
+            DTRACE("expression(): fail state, immediately returning\n");
+            return *this;
+        }
 
         switch(buf_.head())
         {
         case ' ':
         case '\t':
+            DTRACE("expression(): skipping whitespace\n");
             return TinyBasicParser{code_, line_, buf_.tail()}.expression();
         }
 
+        DTRACE("expression(): trying many things\n");
         TinyBasicParser next = literal("+").term()
             || literal("-").term()
             || term()
             ;
+        DTRACE("expression(): got " PFMT "\n", P(next));
         if(next.failed()) return next;
+        DTRACE("expression(): entering helper\n");
         return next.expression_helper();
     }
 
     CONSTEXPR TinyBasicParser term_helper() const
     {
-        if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
+        if(buf_.empty()) {
+            DTRACE("term_helper(): end of file, leaing it to cr()\n");
+            return *this;
+        }
+        DTRACE("term_helper(): trying * or /\n");
         auto next = literal("*") || literal("/");
+        DTRACE("term_helper(): got " PFMT "\n", P(next));
         if(next.failed()) return *this;
+        DTRACE("term_helper(): trying factor\n");
         auto nextnext = next.factor();
+        DTRACE("term_helper(): got " PFMT "\n", P(nextnext));
         if(nextnext.failed()) return nextnext;
+        DTRACE("term_helper(): recursing\n");
         return nextnext.term_helper();
         //return nextnext;
     }
 
     CONSTEXPR TinyBasicParser term() const
     {
-        if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
-        if(failed()) return *this;
+        if(buf_.empty()) {
+            DTRACE("term(): unexpected end of file, immediately returning\n");
+            return {Code::UnexpectedEndOfFile, line_, buf_};
+        }
+        if(failed()) {
+            DTRACE("term(): fail state, immediately returning\n");
+            return *this;
+        }
 
         switch(buf_.head())
         {
         case ' ':
         case '\t':
+            DTRACE("term(): skipping whitespace\n");
             return TinyBasicParser{code_, line_, buf_.tail()}.term();
         }
 
+        DTRACE("term(): trying factor\n");
         TinyBasicParser next = factor();
+        DTRACE("term(): got " PFMT "\n", P(next));
         if(next.failed()) return next;
+        DTRACE("term(): entering helper\n");
         return next.term_helper();
     }
 
     CONSTEXPR TinyBasicParser factor() const
     {
-        if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
-        if(failed()) return *this;
+        if(buf_.empty()) {
+            DTRACE("factor(): unexpected end of file, immediately returning\n");
+            return {Code::UnexpectedEndOfFile, line_, buf_};
+        }
+        if(failed()) {
+            DTRACE("factor(): fail state, immediately returning\n");
+            return *this;
+        }
 
         switch(buf_.head())
         {
         case ' ':
         case '\t':
+            DTRACE("factor(): skipping whitespace\n");
             return TinyBasicParser{code_, line_, buf_.tail()}.factor();
         }
 
-        return var()
+        DTRACE("factor(): trying many things\n");
+        auto ret = var()
             || number()
             || literal("(").expression().literal(")")
             ;
+        DTRACE("factor(): got " PFMT "\n", P(ret));
+        return ret;
     }
 
     CONSTEXPR TinyBasicParser expr_list_helper() const
     {
-        if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
+        if(buf_.empty()) {
+            DTRACE("expr_list_helper(): unexpected end of file, leaving it to cr()\n");
+            return *this;
+        }
+        DTRACE("expr_list_helper(): trying comma\n");
         auto next = literal(",");
+        DTRACE("expr_list_helper(): got " PFMT "\n", P(next));
         if(next.failed()) return *this;
+        DTRACE("expr_list_helper(): trying string or expression\n");
         auto nextnext = next.string()
             || next.expression()
             ;
+        DTRACE("expr_list_helper(): got " PFMT "\n", P(nextnext));
         if(nextnext.failed()) return nextnext;
+        DTRACE("expr_list_helper(): recursing\n");
         return nextnext.expr_list_helper();
         //return nextnext;
     }
 
     CONSTEXPR TinyBasicParser expr_list() const
     {
-        if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
-        if(failed()) return *this;
+        if(buf_.empty()) {
+            DTRACE("expr_list(): unexpected end of file, immediately returning\n");
+            return {Code::UnexpectedEndOfFile, line_, buf_};
+        }
+        if(failed()) {
+            DTRACE("expr_list(): fail state, immediately returning\n");
+            return *this;
+        }
         
         switch(buf_.head())
         {
         case ' ':
         case '\t':
+            DTRACE("expr_list(): skipping whitespace\n");
             return TinyBasicParser{code_, line_, buf_.tail()}.expr_list();
         }
 
+        DTRACE("expr_list(): trying string or expression\n");
         TinyBasicParser next = string()
             || expression()
             ;
+        DTRACE("expr_list(): got " PFMT "\n", P(next));
         if(next.failed()) return next;
+        DTRACE("expr_list(): entering helper\n");
         return next.expr_list_helper();
     }
 
     CONSTEXPR TinyBasicParser string_helper() const
     {
-        if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
-        if(failed()) return *this;
+        if(failed()) {
+            DTRACE("string_helper(): fail state, immediately returning\n");
+            return *this;
+        }
 
-        if(buf_.empty()) return {Code::RunawayString, line_, buf_};
+        if(buf_.empty()) {
+            DTRACE("string_helper(): runaway string\n");
+            return {Code::RunawayString, line_, buf_};
+        }
         switch(buf_.head()) {
         case '"':
         case '\'':
+            DTRACE("string_helper(): end found\n");
             return {code_, line_, buf_.tail()};
         case '\n':
+            DTRACE("string_helper(): EOL found\n");
             return TinyBasicParser{code_, line_ + 1, buf_.tail()}.string_helper();
         default:
+            DTRACE("string_helper(): recursing\n");
             return TinyBasicParser{code_, line_, buf_.tail()}.string_helper();
         }
     }
 
     CONSTEXPR TinyBasicParser string() const
     {
-        if(buf_.empty()) return {Code::UnexpectedEndOfFile, line_, buf_};
-        if(failed()) return *this;
+        if(buf_.empty()) {
+            DTRACE("string(): unexpected end of file, immediately returning\n");
+            return {Code::UnexpectedEndOfFile, line_, buf_};
+        }
+        if(failed()) {
+            DTRACE("string(): fail state, immediately returning\n");
+            return *this;
+        }
         
         switch(buf_.head())
         {
         case ' ':
         case '\t':
+            DTRACE("string(): skipping whitespace\n");
             return TinyBasicParser{code_, line_, buf_.tail()}.string();
         case '"':
         case '\'':
+            DTRACE("string(): head found\n");
             break;
         default:
+            DTRACE("string(): no quotes found\n");
             return {Code::ExpectingQuotes, line_, buf_};
         }
 
+        DTRACE("string(): entering helper\n");
         return TinyBasicParser{code_, line_, buf_.tail()}.string_helper();
     }
 };
