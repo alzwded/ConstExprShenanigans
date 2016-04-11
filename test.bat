@@ -8,7 +8,7 @@ IF #%2 NEQ # GOTO :BADCANRY
 
 SET cppName=%testName%.cpp
 
-g++ --std=gnu++14 -I. -I./bits -DTEST_NAME=%testName% %cppName%
+g++ --std=gnu++14 -I. -I./bits -DTEST_NAME=%testName% %cppName% && a
 
 GOTO :EOF
 
