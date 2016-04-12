@@ -23,12 +23,12 @@ using namespace Jak;
 int main()
 {
 #if TEST == 1
-    TESTCASE("10 PRINT 'Hello, World!'", Code::Okay, 1);
+    TESTCASE("10 PRINT 'Hello, World!'", Code::Okay, 2);
 #elif TEST == 2
     TESTCASE("\
 10 PRINT 'Hello, World!'\n\
 20 GOTO 10",
-    Code::Okay, 2);
+    Code::Okay, 3);
 #elif TEST == 3
     TESTCASE("\
 10 PRINT 'Hello, World!'\n\
@@ -38,6 +38,22 @@ int main()
     TESTCASE("\
 10 PIRNT 'Hello, World!'",
     Code::UnknownKeyword, 1);
+#elif TEST == 5
+    TESTCASE("\
+10 LET X = 1 + 2\n\
+20 PRINT X",
+    Code::Okay, 3);
+#elif TEST == 6
+    TESTCASE("\
+10 LET X = 1 + \n\
+20 PRINT X",
+    Code::ExpectingOperand, 1);
+#elif TEST == 7
+    TESTCASE("\
+5  LET Y = 3\n\
+10 LET X = Y + \n\
+20 PRINT X",
+    Code::ExpectingOperand, 2);
 #endif
 #ifdef PRINT_INFO
     printf("source =\n%s$\n", source);

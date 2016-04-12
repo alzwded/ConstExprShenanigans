@@ -47,6 +47,7 @@ enum class Code {
     ExpectingQuotes = 15,
     RunawayString = 16,
     UnexpectedEndOfFile = 17,
+    ExpectingOperand = 18,
     TODO_remove_me
 };
 
@@ -63,6 +64,7 @@ JAK_ERR(ExpectingAVariable, false);
 JAK_ERR(ExpectingQuotes, false);
 JAK_ERR(RunawayString, false);
 JAK_ERR(UnexpectedEndOfFile, false);
+JAK_ERR(ExpectingOperand, false);
 
 #undef JAK_ERR
 

@@ -2,7 +2,8 @@
 SETLOCAL
 
 IF #%1 == # GOTO :NOFILE
-SET testName=%1
+SET testID=%1
+SET testName=test%testID%
 
 IF #%2 NEQ # GOTO :BADCANRY
 
