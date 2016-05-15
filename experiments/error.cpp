@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <string>
 
+// Possible errors returned by parsers
 enum class Errors
 {
     None,
@@ -14,9 +15,11 @@ enum class Errors
     NotEvaluated
 };
 
+// Result class
+// also carries forward the state of the input buffer
 struct Result
 {
-    std::deque<char> in;
+    std::deque<char> in; // this could be moved into Parser
     Errors err;
     explicit operator bool() const
     {
@@ -60,10 +63,12 @@ std::ostream& operator<<(std::ostream& fout, Result const& r)
     }
 }
 
+// Generic parser type
 struct Parser
 {
-    std::function<Parser(std::deque<char>)> cont;
-    Result result;
+    std::function<Parser(std::deque<char>)> cont; // continuation
+    Result result; // return value
+
     inline Parser operator()(std::deque<char> in) const
     {
         if(cont) return Lazy(cont(in));
@@ -76,13 +81,17 @@ struct Parser
     {}
 
 private:
+    // lazy evaluation expansion
     static Parser Lazy(Parser p)
     {
+        // as long as it returns a continuation, continue evaluating
         if(p.cont) return p(p.result.in);
         return p;
     };
 };
 
+// Bind operation
+// Takes a parser function as input and creates a Parser monad
 template<typename P>
 Parser BindParser(P p)
 {
@@ -94,12 +103,17 @@ Parser BindParser(P p)
     };
 }
 
+// Return operation
+// Takes a Parser monad and extracts its value
 Result Return(Parser p)
 {
     return p.result;
 }
 
-Parser Any(Parser a)
+// Many operation
+// Continues executing a Parser while it returns successfully
+// Matches one or more instances of 'a'
+Parser Many(Parser a)
 {
     return {
         Result(Errors::NotEvaluated),
@@ -108,20 +122,27 @@ Parser Any(Parser a)
             if(Return(left)) {
                 return {
                     Return(left),
-                    Any(Parser{
+                    Many(Parser{
                         Return(left),
                         a
                     })
                 };
             } else {
                 auto r = Return(a);
+                // NotEvaluated represents the initial state
+                // We want to match one or more, so if the first
+                // analysis fails, return with *that* error
                 if(r.err == Errors::NotEvaluated) return left;
+                // else, return the previous state
                 return r;
             }
         }
     };
 }
 
+// And operation
+// Takes two parsers. If a fails, the result is Fail.
+// Otherwise, both are executed and 'b' is returned.
 Parser And(Parser a, Parser b)
 {
     return {
@@ -142,6 +163,9 @@ Parser And(Parser a, Parser b)
     };
 }
 
+// Or operation
+// Takes two parsers. If 'a' succeeds, the result is 'a'
+// Otherwise, the result is 'b'
 Parser Or(Parser a, Parser b)
 {
     return {
@@ -162,22 +186,10 @@ Parser Or(Parser a, Parser b)
     };
 }
 
-/*
-BindParser = [](P) -> [P](deque<char>) -> Result || Continue || Fail
-    Success(P) -> Continue || Result
-    Fail(P) -> Fail
-Any = [P](deque<char>) -> Result || Continue
-    Success(P) -> [P](deque<char>) -> Result || Continue
-    Fail(P) -> Result
-And = [A, B](deque<char>) -> Result || Continue || Fail
-    Success(A) => [B](deque<char>) -> Result || Fail
-    Fail(A) => Fail
-Or = [A, B](deque<char>) -> Result || Continue || Fail
-    Success(A) => Result
-    Fail(A) => [B](deque<char>) -> Result || Fail
-*/
+// User-defined parser functions
+// =============================
 
-
+// match keyword 'let'
 Result let(std::deque<char> in)
 {
     while(in.size() && in.front() == ' ') in.pop_front();
@@ -191,6 +203,7 @@ Result let(std::deque<char> in)
     return Result(Errors::NoKeyword);
 }
 
+// match end-of-file
 Result eof(std::deque<char> in)
 {
     while(in.size() && in.front() == ' ') in.pop_front();
@@ -198,6 +211,7 @@ Result eof(std::deque<char> in)
     else return Result(Errors::TrailingChars);
 }
 
+// match [a-z]
 Result var(std::deque<char> in)
 {
     while(in.size() && in.front() == ' ') in.pop_front();
@@ -208,21 +222,26 @@ Result var(std::deque<char> in)
     if(in.front() != ' ') return Result(Errors::LongVar);
     return Result(in);
 }
+// =============================
 
 int main()
 {
-    auto p = Any(
+    // build a parser
+    auto p = Many(
+            // Match either...
             Or(
+                // 'let' followed by any number > 1 of single letters...
                 And(
                     And(
                         BindParser(let)
                         ,
-                        Any(
+                        Many(
                             BindParser(var))
                        )
                     ,
                     BindParser(eof))
-                ,
+                , // ...or...
+                // a single letter.
                 And(
                     BindParser(var)
                     ,
@@ -231,27 +250,52 @@ int main()
               )
             );
 
+    // test cases
     std::deque<std::pair<std::string, Errors>> tests {
-        { "let a b c", Errors::None },
-        { "let", Errors::LongVar },
-        { "a", Errors::None },
-        { "ab", Errors::LongVar },
-        { "3", Errors::InvalidVar },
-        { "let 3", Errors::LongVar },
-        { "let ab c", Errors::LongVar },
-        { "a b", Errors::TrailingChars }
+        // input        expected result
+        { "let a b c",  Errors::None },
+        { "let",        Errors::LongVar },
+        { "a",          Errors::None },
+        { "ab",         Errors::LongVar },
+        { "3",          Errors::InvalidVar },
+        { "let 3",      Errors::LongVar },
+        { "let ab c",   Errors::LongVar },
+        { "a b",        Errors::TrailingChars }
     };
 
+    // output header
     std::cout << "Passed?  " << std::setw(10) << std::left << "input" << "\tReturn value" << std::setw(0) << std::endl;
     std::cout << std::string(60, '-') << std::endl;
 
+    // execute tests
     for(auto&& i : tests) {
+        // transform string into deque<char>
         auto in = std::deque<char>(i.first.begin(), i.first.end());
+        // execute parser on input
         auto r = Return(p(in));
+        // validate result
         if(r == i.second) {
+            // passed...
             std::cout << "Pass:    " << std::setw(10) << std::left << i.first << "\t:: Returned: " << r << std::setw(0) << std::endl;
         } else {
+            // failed...
             std::cout << "FAIL:    " << std::setw(10) << std::left << i.first << "\t:: Returned: " << r << std::setw(0) << " Expected: " << i.second << std::endl;
         }
     }
 }
+
+/*
+BindParser = [](P) -> [P](deque<char>) -> Result || Continue || Fail
+    Success(P) -> Continue || Result
+    Fail(P) -> Fail
+Return = [P]() -> Result
+Many = [P](deque<char>) -> Result || Continue
+    Success(P) -> [P](deque<char>) -> Result || Continue
+    Fail(P) -> Result
+And = [A, B](deque<char>) -> Result || Continue || Fail
+    Success(A) => [B](deque<char>) -> Result || Fail
+    Fail(A) => Fail
+Or = [A, B](deque<char>) -> Result || Continue || Fail
+    Success(A) => Result
+    Fail(A) => [B](deque<char>) -> Result || Fail
+*/
