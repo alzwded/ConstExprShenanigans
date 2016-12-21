@@ -78,9 +78,9 @@ template<template<TypeEnum, typename... Args> typename T, typename... MoreArgs>
 std::map<TypeEnum, std::function<void(Cont const&, MoreArgs...)>> const& GenerateMap()
 {
     static decltype(GenerateMap<T, MoreArgs...>()) rval {
-        { TypeEnum::BOOL, &T<TypeEnum::BOOL, MoreArgs...>::fn },
-        { TypeEnum::INT, &T<TypeEnum::INT, MoreArgs...>::fn },
-        { TypeEnum::DOUBLE, &T<TypeEnum::DOUBLE, MoreArgs...>::fn }
+        { TypeEnum::BOOL, &T<TypeEnum::BOOL>::template fn<MoreArgs...> },
+        { TypeEnum::INT, &T<TypeEnum::INT>::template fn<MoreArgs...> },
+        { TypeEnum::DOUBLE, &T<TypeEnum::DOUBLE>::template fn<MoreArgs...> }
     };
     return rval;
 }
@@ -89,9 +89,10 @@ std::map<TypeEnum, std::function<void(Cont const&, MoreArgs...)>> const& Generat
 template<template<typename T> typename FN>
 struct DispatchOf
 {
-    template<TypeEnum e, typename... Args>
+    template<TypeEnum e>
     struct type
     {
+        template<typename... Args>
         static void fn(Cont const& c, Args&&... args)
         {
             return FN<typename TypeOfTypeEnum<e>::type>(args...)(GetMemberByType<e>(c));
@@ -102,7 +103,8 @@ struct DispatchOf
 // utility to actually call the potato
 template<template<typename F> typename FN, typename... Args> void CallGenericFunctor(Cont const& c, Args&&... args)
 {
-    return GenerateMap<DispatchOf<Printer>::type, Args...>().at(c.type)(c, args...);
+    auto&& fn = GenerateMap<DispatchOf<FN>::template type, Args...>().at(c.type);
+    return fn(c, args...);
 }
 
 // your processing functor
