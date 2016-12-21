@@ -74,13 +74,13 @@ constexpr double const& GetMemberByType<TypeEnum::DOUBLE>(Cont const& c)
 }
 
 // utility template to map the correct template instantiation to the correct type enum type type type
-template<template<TypeEnum> typename T>
-std::map<TypeEnum, std::function<void(Cont const&)>> const& GenerateMap()
+template<template<TypeEnum, typename... Args> typename T, typename... MoreArgs>
+std::map<TypeEnum, std::function<void(Cont const&, MoreArgs...)>> const& GenerateMap()
 {
-    static decltype(GenerateMap<T>()) rval {
-        { TypeEnum::BOOL, &T<TypeEnum::BOOL>::fn },
-        { TypeEnum::INT, &T<TypeEnum::INT>::fn },
-        { TypeEnum::DOUBLE, &T<TypeEnum::DOUBLE>::fn }
+    static decltype(GenerateMap<T, MoreArgs...>()) rval {
+        { TypeEnum::BOOL, &T<TypeEnum::BOOL, MoreArgs...>::fn },
+        { TypeEnum::INT, &T<TypeEnum::INT, MoreArgs...>::fn },
+        { TypeEnum::DOUBLE, &T<TypeEnum::DOUBLE, MoreArgs...>::fn }
     };
     return rval;
 }
@@ -89,44 +89,48 @@ std::map<TypeEnum, std::function<void(Cont const&)>> const& GenerateMap()
 template<template<typename T> typename FN>
 struct DispatchOf
 {
-    template<TypeEnum e>
+    template<TypeEnum e, typename... Args>
     struct type
     {
-        static void fn(Cont const& c)
+        static void fn(Cont const& c, Args&&... args)
         {
-            return FN<typename TypeOfTypeEnum<e>::type>()(GetMemberByType<e>(c));
+            return FN<typename TypeOfTypeEnum<e>::type>(args...)(GetMemberByType<e>(c));
         };
     };
 };
 
 // utility to actually call the potato
-template<template<typename F> typename FN> void CallGenericFunctor(Cont const& c)
+template<template<typename F> typename FN, typename... Args> void CallGenericFunctor(Cont const& c, Args&&... args)
 {
-    return GenerateMap<DispatchOf<Printer>::type>().at(c.type)(c);
+    return GenerateMap<DispatchOf<Printer>::type, Args...>().at(c.type)(c, args...);
 }
 
 // your processing functor
 template<typename T>
 struct Printer
 {
+    Printer(int& state)
+        : myState(state)
+    {}
+    int& myState;
     void operator()(T const& t);
 };
 
 template<>
 void Printer<bool>::operator()(bool const& t)
 {
-    printf("bool: %s\n", t ? "true" : "false");
+    printf("%d: bool: %s\n", myState++, t ? "true" : "false");
 }
 
 template<>
 void Printer<int>::operator()(int const& t)
 {
-    printf("int: %d\n", t);
+    printf("%d: int: %d\n", myState++, t);
 }
 template<>
 void Printer<double>::operator()(double const& t)
 {
-    printf("double: %lg\n", t);
+    printf("%d: double: %lg\n", myState++, t);
 }
 
 int main(int argc, char* argv[])
@@ -136,8 +140,9 @@ int main(int argc, char* argv[])
         42,
         3.14
     };
+    int state = 1;
     for(size_t i = 0; i < 3; ++i)
     {
-        CallGenericFunctor<Printer>(conts[i]);
+        CallGenericFunctor<Printer>(conts[i], state);
     }
 }
