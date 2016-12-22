@@ -135,16 +135,55 @@ void Printer<double>::operator()(double const& t)
     printf("%d: double: %lg\n", myState++, t);
 }
 
+// another processor
+#include <vector>
+template<typename T>
+struct Squarer
+{
+    Squarer(std::vector<Cont>& stash)
+        : myStash(stash)
+    {}
+    void operator()(T const&);
+    std::vector<Cont>& myStash;
+};
+
+template<>
+void Squarer<int>::operator()(int const& t)
+{
+    myStash.push_back(t * t);
+}
+
+template<>
+void Squarer<double>::operator()(double const& t)
+{
+    myStash.push_back(t * t);
+}
+
+template<typename T>
+void Squarer<T>::operator()(T const& t)
+{
+    myStash.push_back(t);
+}
+
+#include <algorithm>
 int main(int argc, char* argv[])
 {
-    Cont conts[] = {
+    std::vector<Cont> conts {
+        2,
+        3,
+        4,
         true,
         42,
         3.14
     };
-    int state = 1;
-    for(size_t i = 0; i < 3; ++i)
+    std::vector<Cont> squared;
+    for(auto&& c : conts)
     {
-        CallGenericFunctor<Printer>(conts[i], state);
+        CallGenericFunctor<Squarer>(c, squared);
     }
+    int lineNo = 1;
+    auto p = [&lineNo](Cont const& c) {
+        CallGenericFunctor<Printer>(c, lineNo);
+    };
+    std::for_each(squared.begin(), squared.end(), p);
 }
