@@ -170,7 +170,7 @@ int main(int argc, char* argv[])
 {
     std::vector<Cont> conts {
         2,
-        3,
+        3.0,
         4,
         true,
         42,
